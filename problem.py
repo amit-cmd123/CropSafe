@@ -105,9 +105,12 @@ class PathProblem:
         """Total cost of a path given as a list of cells [start, ..., end]."""
         total = 0
         for a, b in zip(path, path[1:]):
-            action = next(name for name, d in ACTIONS.items()
-                          if (a[0] + d[0], a[1] + d[1]) == b)
-            total += self.step_cost(a, action, b)
+                        action = next((name for name, d in ACTIONS.items()
+                                    if (a[0] + d[0], a[1] + d[1]) == b), None)
+                        if action is None:
+                             raise ValueError(f"Invalid path: {a} -> {b} is not a single Up/Down/Left/Right move")
+                        total += self.step_cost(a, action, b)
+                          
         return total
 
     def cells_near_crops(self, path):

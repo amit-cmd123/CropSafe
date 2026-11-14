@@ -11,7 +11,10 @@ Screenshots produced (folder: screenshots/):
     02_problem.png                   Task 2  problem formulation + legal moves
     03_bfs.png, 03_dfs.png           Task 3  each algorithm's path and expanded nodes
     04_greedy.png, 05_astar.png      Task 3
+    05_ucs.png                       extra   Uniform Cost Search on the crop-safe cost
     06_crop_safe.png                 Task 4  plain vs crop-safe A*
+    06_crop_safe_tradeoff.png        Task 4  a goal where the safer route is longer
+    06_penalty_sweep.png             Task 4  how the penalty weight changes the route
     06_crop_safe_formulation.png     Task 4  formulation with the crop-safe cost
     07_replanning.png                Task 5  hidden obstacle detected, route replanned
     07_replanning_results.png        Task 5  what happened + table
@@ -41,6 +44,7 @@ from search.astar import astar
 from search.bfs import bfs
 from search.dfs import dfs
 from search.greedy import greedy
+from search.ucs import ucs
 
 KNOWN_MAP_NOTE = "planned on the known map (red X = hidden obstacle the robot cannot see)"
 
@@ -107,6 +111,15 @@ def main():
         r.report()
     for r, name in zip(results[:4], ["03_bfs.png", "03_dfs.png", "04_greedy.png", "05_astar.png"]):
         save_single_path(field, r, name)
+        
+    # extra baseline: UCS is optimal for the crop-safe cost, like A*, but has no heuristic
+    safe = PathProblem(field, crop_safe=True)
+    uniform = ucs(safe)
+    uniform.report()
+    print(f"  crop-safe cost: BFS {safe.path_cost(results[0].path):.0f}, UCS {safe.path_cost(uniform.path):.0f}, "
+          f"A* (crop-safe) {safe.path_cost(results[4].path):.0f}  ->  UCS and A* are optimal, "
+          f"A* expands {uniform.nodes_expanded - results[4].nodes_expanded} fewer nodes")
+    save_single_path(field, uniform, "05_ucs.png")
 
     heading("TASK 4 - Crop-safe planning")
     crop_safe_demo.main(show=False)

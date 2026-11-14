@@ -20,8 +20,9 @@ A simulated robot plans a route across a potato field from a start cell to a mon
 8. [Task 5 - Obstacle detection and replanning](#task-5---obstacle-detection-and-replanning)
 9. [Task 6 - Performance evaluation](#task-6---performance-evaluation)
 10. [Observations](#observations)
-11. [Limitations and possible extensions](#limitations-and-possible-extensions)
-12. [References and acknowledgements](#references-and-acknowledgements)
+11. [Automated tests](#automated-tests)
+12. [Limitations and possible extensions](#limitations-and-possible-extensions)
+13. [References and acknowledgements](#references-and-acknowledgements)
 
 ---
 
@@ -69,9 +70,11 @@ Each part can also be run on its own:
 | `python field.py` | Task 1 - draw the field |
 | `python problem.py` | Task 2 - problem formulation |
 | `python -m search.bfs` · `python -m search.dfs` · `python -m search.greedy` · `python -m search.astar` | Task 3 - one algorithm |
-| `python crop_safe_demo.py` | Task 4 - plain vs crop-safe A* |
+| `python -m search.ucs` | Extra baseline - Uniform Cost Search vs BFS and A* on the crop-safe cost |
+| `python crop_safe_demo.py` | Task 4 - plain vs crop-safe A*, the trade-off goal and the penalty-weight table |
 | `python replanning.py --animate` | Task 5 - hidden obstacle and replanning |
 | `python evaluation.py` | Task 6 - comparison tables and charts |
+| `python tests/test_project.py` | Automated tests (about 2 seconds) |
 
 Run the commands from the project folder. The search modules use `python -m` because they live in the `search` package.
 
@@ -89,10 +92,13 @@ Run the commands from the project folder. The search modules use `python -m` bec
 │   ├── dfs.py           Depth-First Search
 │   ├── heuristics.py    Manhattan distance heuristic
 │   ├── greedy.py        Greedy Best-First Search
-│   └── astar.py         A* Search
-├── crop_safe_demo.py    Task 4: plain vs crop-safe A*
+│   ├── astar.py         A* Search
+│   └── ucs.py           Uniform Cost Search (extra baseline: A* with h = 0)
+├── crop_safe_demo.py    Task 4: plain vs crop-safe A*, trade-off goal, penalty-weight sweep
 ├── replanning.py        Task 5: sensing, map update, A* replanning, animation
 ├── evaluation.py        Task 6: metrics, tables, charts, observations
+├── tests/
+│   └── test_project.py  automated checks for every claim in this README
 ├── results/             results_table.md and results.csv (written by evaluation.py)
 └── screenshots/         every figure (written by main.py)
 ```
@@ -162,6 +168,18 @@ h(n) = |row(n) - row(goal)| + |col(n) - col(goal)|
 
 Ties in A* are broken by smaller `h`, so on equal `f` it expands the cell nearer the goal first.
 
+### Extra baseline: Uniform Cost Search
+
+BFS is optimal only when every move costs the same. With the crop-safe cost (Task 4) moves cost different amounts, so the project also includes **Uniform Cost Search (UCS)**, which expands the cell with the smallest `g(n)`. UCS is exactly A* with `h = 0`, so it is optimal for any non-negative step costs but has no sense of direction.
+
+| Planner (crop-safe cost) | Crop-safe cost | Nodes expanded |
+|---|---:|---:|
+| BFS | 62 (not optimal) | 215 |
+| UCS | 56 (optimal) | 213 |
+| A* (crop-safe) | 56 (optimal) | 182 |
+
+A* finds the same optimal cost as UCS with fewer nodes: the heuristic still helps when moves have different costs.
+
 ![All paths side by side](screenshots/09_all_paths.png)
 
 <details>
@@ -171,6 +189,7 @@ Ties in A* are broken by smaller `h`, so on equal `f` it expands the cell nearer
 ![DFS](screenshots/03_dfs.png)
 ![Greedy](screenshots/04_greedy.png)
 ![A*](screenshots/05_astar.png)
+![UCS](screenshots/05_ucs.png)
 
 </details>
 
@@ -193,9 +212,39 @@ Diagonals count because a real robot has width and can brush a plant while passi
 
 Only `step_cost` changes; A* itself is untouched and simply minimises the new cost. Every step still costs at least 1, so Manhattan distance stays admissible and A* stays optimal.
 
-**Result:** plain A* drives along row 5, right beside a potato row. Crop-safe A* takes the middle lanes instead: the same 25 moves, half as many cells next to crops (3 instead of 6), and a crop-safe cost of 56 instead of 62. The three remaining crop-adjacent cells are the unavoidable crossing through the gap in the middle row.
+**Result on the default goal (4, 16):** plain A* drives along row 5, right beside a potato row. Crop-safe A* takes the middle lanes instead: the same 25 moves, half as many cells next to crops (3 instead of 6), and a crop-safe cost of 56 instead of 62. The three remaining crop-adjacent cells are the unavoidable crossing through the gap in the middle row.
 
 ![Crop-safe planning](screenshots/06_crop_safe.png)
+
+### When the safer route is longer
+
+On the default goal the safe route happens to be just as short. To show the real trade-off, the same field is also solved with the goal at (1, 16), where the shortest route runs along row 1, right beside a potato row:
+
+| Planner | Moves | Cells next to crops | Crop-safe cost |
+|---|---:|---:|---:|
+| A* (plain) | 28 | 16 | 88 |
+| A* (crop-safe) | 30 | 1 | 62 |
+
+Crop-safe A* accepts **2 extra moves** to drive along row 0 instead, cutting the cells next to crops from 16 to 1. This is "safer alternatives are preferred where available" in action.
+
+![Trade-off goal](screenshots/06_crop_safe_tradeoff.png)
+
+### How strong must the penalty be?
+
+The penalties are multiplied by a weight: 0 is plain A*, 1 is the default (+3 / +1).
+
+| Weight | Default goal: moves | Cells next to crops | Trade-off goal: moves | Cells next to crops |
+|---:|---:|---:|---:|---:|
+| 0 | 25 | 6 | 28 | 16 |
+| 0.05 | 25 | 3 | 28 | 16 |
+| 0.1 | 25 | 3 | 30 | 1 |
+| 0.5 | 25 | 3 | 30 | 1 |
+| 1 (default) | 25 | 3 | 30 | 1 |
+| 3 | 25 | 3 | 30 | 1 |
+
+On the default goal any penalty at all moves the route away from the crops, because a safer route of the same length exists. On the trade-off goal a tiny penalty (0.05) is not worth 2 extra moves, so the robot still hugs the crops; from 0.1 upwards it takes the safer route. The default weight sits well inside the safe range. Stronger penalties make A* expand more nodes (31 at weight 0, 182 at weight 1 and 208 at weight 3 on the default goal), because the heuristic ignores penalties and so becomes a looser estimate.
+
+![Penalty sweep](screenshots/06_penalty_sweep.png)
 
 ---
 
@@ -216,7 +265,7 @@ Because the sensor sees one cell ahead, the robot always detects an obstacle bef
 ![Replanning](screenshots/07_replanning.png)
 ![Replanning results](screenshots/07_replanning_results.png)
 
-**Testing.** The loop was also checked with no hidden obstacles (0 replans), an obstacle off the route (0 replans), several hidden obstacles (2 replans), a goal sealed in by hidden obstacles (stops and reports failure), and 400 random fields with 25 hidden obstacles each. The robot never drove into an obstacle, and it reached the goal in exactly the fields where the goal was reachable.
+**Testing.** The loop was also checked with no hidden obstacles (0 replans), an obstacle off the route (0 replans), several hidden obstacles (2 replans), a goal sealed in by hidden obstacles (stops and reports failure), and hundreds of random fields with several hidden obstacles each. The robot never drove into an obstacle, and it reached the goal in exactly the fields where the goal was reachable. These checks are part of the [automated tests](#automated-tests).
 
 ---
 
@@ -228,14 +277,15 @@ All planners run on the same field, and every route is scored with the **same cr
 
 | Algorithm | Reached goal | Moves | Crop-safe cost | Cells next to crops | Nodes expanded | Time (ms) | Replans | Hits hidden obstacle |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| BFS | yes | 25 | 62 | 6 | 215 | 0.389 | 0 | yes |
-| DFS | yes | 91 | 245 | 40 | 152 | 0.347 | 0 | no |
-| Greedy | yes | 27 | 60 | 3 | 28 | 0.086 | 0 | yes |
-| A* (plain) | yes | 25 | 62 | 6 | 31 | 0.102 | 0 | yes |
-| A* (crop-safe) | yes | 25 | 56 | 3 | 182 | 0.545 | 0 | yes |
-| Online A* + replanning | yes | 25 | 60 | 5 | 203 | 0.633 | 1 | no |
+| BFS | yes | 25 | 62 | 6 | 215 | 0.555 | 0 | yes |
+| DFS | yes | 91 | 245 | 40 | 152 | 0.487 | 0 | no |
+| UCS | yes | 25 | 56 | 3 | 213 | 0.878 | 0 | yes |
+| Greedy | yes | 27 | 60 | 3 | 28 | 0.120 | 0 | yes |
+| A* (plain) | yes | 25 | 62 | 6 | 31 | 0.145 | 0 | yes |
+| A* (crop-safe) | yes | 25 | 56 | 3 | 182 | 0.787 | 0 | yes |
+| Online A* + replanning | yes | 25 | 60 | 5 | 203 | 0.937 | 1 | no |
 
-_The first five planners plan once on the known map. "Reached goal" means their plan reaches the goal on that map; "Hits hidden obstacle" shows whether the real robot would drive into the unknown obstacle. For online A*, time and nodes are summed over every A* run, including the replan._
+_The first six planners plan once on the known map. "Reached goal" means their plan reaches the goal on that map; "Hits hidden obstacle" shows whether the real robot would drive into the unknown obstacle. For online A*, time and nodes are summed over every A* run, including the replan._
 
 ### Average over 100 random layouts
 
@@ -243,12 +293,13 @@ To check the trends are not an accident of one map, each of 100 layouts (fixed r
 
 | Algorithm | Reached goal on known map (%) | Reached goal for real (%) | Moves | Crop-safe cost | Nodes expanded | Time (ms) | Replans |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| BFS | 96.0 | 58.0 | 25.7 | 74.3 | 178.6 | 0.333 | 0 |
-| DFS | 96.0 | 20.0 | 86.1 | 257.1 | 135.1 | 0.315 | 0 |
-| Greedy | 96.0 | 55.0 | 28.0 | 74.7 | 31.8 | 0.092 | 0 |
-| A* (plain) | 96.0 | 54.0 | 25.7 | 73.2 | 48.2 | 0.147 | 0 |
-| A* (crop-safe) | 96.0 | 57.0 | 26.9 | 64.2 | 152.0 | 0.451 | 0 |
-| Online A* + replanning | 94.0 | 94.0 | 27.5 | 67.1 | 183.2 | 0.548 | 0.5 |
+| BFS | 96.0 | 58.0 | 25.7 | 74.3 | 178.6 | 0.478 | 0 |
+| DFS | 96.0 | 20.0 | 86.1 | 257.1 | 135.1 | 0.458 | 0 |
+| UCS | 96.0 | 58.0 | 26.8 | 64.2 | 174.9 | 0.734 | 0 |
+| Greedy | 96.0 | 55.0 | 28.0 | 74.7 | 31.8 | 0.137 | 0 |
+| A* (plain) | 96.0 | 54.0 | 25.7 | 73.2 | 48.2 | 0.219 | 0 |
+| A* (crop-safe) | 96.0 | 57.0 | 26.9 | 64.2 | 152.0 | 0.678 | 0 |
+| Online A* + replanning | 94.0 | 94.0 | 27.5 | 67.1 | 183.2 | 0.868 | 0.5 |
 
 ![Evaluation charts](screenshots/08_evaluation_charts.png)
 
@@ -267,9 +318,34 @@ To check the trends are not an accident of one map, each of 100 layouts (fixed r
 - **DFS** reaches the goal, but its route is 91 moves long - 3.6 times the shortest - and passes 40 cells next to crops. DFS is not optimal.
 - **Greedy** expands only 28 nodes, the fewest, but its route is 27 moves: it heads straight for the goal, runs into a known obstacle and has to detour. Fast, not optimal.
 - **Plain A\*** matches BFS's 25 moves while expanding 31 nodes, 86% fewer than BFS. This is the value of an admissible heuristic.
-- **Crop-safe A\*** keeps the same 25 moves but halves the cells next to crops (3 instead of 6) and has the lowest crop-safe cost of the offline planners (56). The price is more search, 182 nodes, because the Manhattan heuristic does not account for penalties and so guides the search less sharply.
-- **Hidden obstacles defeat offline planning.** BFS, Greedy and both A* variants plan straight through the hidden obstacle; DFS misses it only by chance. Over 100 random layouts, offline crop-safe A* would really reach the goal in only 57% of them. **Online A\* with replanning** reaches it in 94% - every layout where the goal is reachable at all - at a small cost in extra moves and nodes.
+- **UCS vs BFS vs A\* on the crop-safe cost.** BFS's route costs 62 because BFS ignores step costs. UCS finds the cheapest route (56) but expands 213 nodes; crop-safe A* finds the same cost with 182, 15% fewer. Over 100 random layouts UCS and crop-safe A* average exactly the same cost (64.2), as both are optimal, while A* expands fewer nodes (152 vs 175).
+- **Crop-safe A\*** keeps the same 25 moves but halves the cells next to crops (3 instead of 6) and has the lowest crop-safe cost (56, tied with UCS). The price is more search, 182 nodes, because the Manhattan heuristic does not account for penalties and so guides the search less sharply.
+- **Safety can cost distance, and the robot pays it when it is worth it.** At the trade-off goal (1, 16) crop-safe A* takes 2 extra moves to cut the cells next to crops from 16 to 1. The penalty-weight table shows the switch happens between weights 0.05 and 0.1, well below the default of 1.
+- **Hidden obstacles defeat offline planning.** BFS, UCS, Greedy and both A* variants plan straight through the hidden obstacle; DFS misses it only by chance. Over 100 random layouts, offline crop-safe A* would really reach the goal in only 57% of them. **Online A\* with replanning** reaches it in 94% - every layout where the goal is reachable at all - at a small cost in extra moves and nodes.
 - **Times are all well under a millisecond** on this grid, so the number of expanded nodes is the more meaningful measure of effort. Time follows nodes expanded: Greedy and plain A* are fastest because they expand the fewest nodes, while crop-safe A* is slower because it expands more nodes and each expansion also pays for a priority-queue operation.
+
+---
+
+## Automated tests
+
+```bash
+python tests/test_project.py
+```
+
+No extra library is needed; `python -m pytest tests` also works if pytest is installed. All eight tests pass in about 2 seconds:
+
+| Test | What it checks |
+|---|---|
+| `test_every_algorithm_gives_a_valid_crop_safe_path` | Every algorithm, with plain and crop-safe cost, returns a path from start to goal made of single 4-directional steps on safe cells only, and never expands a cell twice |
+| `test_optimality_on_random_fields` | On 200 random fields, plain A* matches BFS's move count, crop-safe A* matches UCS's cost, and no other planner finds a cheaper route |
+| `test_manhattan_heuristic_is_admissible` | From every safe cell, Manhattan distance is never larger than the true cheapest crop-safe cost to the goal |
+| `test_unreachable_goal_is_reported_not_crashed` | With the goal walled in, every planner and the replanning robot report failure instead of crashing |
+| `test_default_replanning_scenario` | The robot senses the hidden obstacle at step 18 from (5, 10), replans once and arrives in 25 moves |
+| `test_replanning_never_hits_an_obstacle` | On 200 random fields with hidden obstacles, the robot never enters a real obstacle and reaches the goal exactly when it is reachable |
+| `test_safer_route_can_be_longer` | At goal (1, 16) the crop-safe route is longer but has fewer cells next to crops |
+| `test_path_cost_rejects_an_invalid_path` | A path that jumps over a cell is rejected with a clear error |
+
+The tests were checked by breaking the code on purpose: an inflated heuristic makes the admissibility and optimality tests fail, and a zero crop penalty makes the trade-off test fail.
 
 ---
 

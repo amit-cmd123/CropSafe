@@ -12,8 +12,9 @@ its own known map, then drives the route one cell at a time:
         ACT    : move one cell along the (possibly new) route
 
 Run:
-    python replanning.py            -> figure + table
-    python replanning.py --animate  -> also shows the robot driving step by step
+        python replanning.py            -> page 1 (maps) + page 2 (results table)
+    python replanning.py --animate  -> also page 3: the robot driving (smooth animation)
+    python replanning.py --gif      -> same, and saves screenshots/07_replanning.gif
 """
 
 import sys

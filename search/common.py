@@ -22,7 +22,7 @@ class SearchResult:
 
     def report(self):
         status = "reached goal" if self.found else "FAILED"
-        print(f"{self.algorithm:<12} | {status:<12} | moves {self.path_length:>3} | "
+        print(f"{self.algorithm:<15} | {status:<12} | moves {self.path_length:>3} | "
               f"cost {self.cost:>6.1f} | expanded {self.nodes_expanded:>4} | {self.time_ms:.3f} ms")
 
 

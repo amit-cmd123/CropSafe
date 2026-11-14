@@ -4,7 +4,7 @@ evaluation.py  -  Iteration 8 (Task 6): performance evaluation
 Compares every planner on the SAME field and scores every route with the
 SAME crop-safe cost, so the numbers are comparable:
 
-  BFS, DFS, Greedy, A* (plain), A* (crop-safe)   - offline, plan once on the known map
+    BFS, DFS, UCS, Greedy, A* (plain), A* (crop-safe) - offline, plan once on the known map
   Online A* with replanning                       - drives, senses, replans (Task 5)
 
 Metrics: goal reached, path length (moves), crop-safe cost, cells next to
@@ -42,12 +42,13 @@ from search.astar import astar
 from search.bfs import bfs
 from search.dfs import dfs
 from search.greedy import greedy
+from search.ucs import ucs
 
 REPEATS = 30              # timing repetitions per planner
 RANDOM_FIELDS = 100       # layouts for the robustness table
 RANDOM_SEED = 42          # fixed seed -> the same random layouts every run
 
-ORDER = ["BFS", "DFS", "Greedy", "A* (plain)", "A* (crop-safe)", "Online A* + replanning"]
+ORDER = ["BFS", "DFS", "UCS", "Greedy", "A* (plain)", "A* (crop-safe)", "Online A* + replanning"]
 
 
 # ----------------------------------------------------------------------
@@ -71,6 +72,7 @@ def evaluate(field, repeats=REPEATS):
     offline = [
         ("BFS", lambda: bfs(safe)),
         ("DFS", lambda: dfs(safe)),
+        ("UCS", lambda: ucs(safe)),
         ("Greedy", lambda: greedy(safe)),
         ("A* (plain)", lambda: astar(plain, name="A* (plain)")),
         ("A* (crop-safe)", lambda: astar(safe, name="A* (crop-safe)")),
@@ -103,7 +105,7 @@ def evaluate(field, repeats=REPEATS):
         "Nodes expanded": nav.nodes_expanded,
         "Time (ms)": statistics.median(nav_times),     # A* planning time, all runs summed
         "Replans": nav.replans,
-        "Hits hidden obstacle": False,                 # it senses and drives around it
+        "Hits hidden obstacle": any(c in hidden for c in nav.trail),   # measured on the route driven             # it senses and drives around it
         "path": nav.trail,
     })
     return rows
@@ -202,10 +204,10 @@ def markdown_table(rows, columns):
 def observations(rows, random_rows):
     """Plain-language findings computed from the tables."""
     by = {r["Algorithm"]: r for r in rows}
-    bfs_r, dfs_r, gr, ap, asafe, online = (by[n] for n in ORDER)
+    bfs_r, dfs_r, ucs_r, gr, ap, asafe, online = (by[n] for n in ORDER)
     most = max(rows, key=lambda r: r["Nodes expanded"])
     hit = [r["Algorithm"] for r in rows if r["Hits hidden obstacle"]]
-    missed = [r["Algorithm"] for r in rows[:5] if not r["Hits hidden obstacle"]]
+    missed = [r["Algorithm"] for r in rows[:-1] if not r["Hits hidden obstacle"]]
     rnd = {r["Algorithm"]: r for r in random_rows}
     obs = [
         f"BFS finds the shortest route ({bfs_r['Moves']} moves) but expands {bfs_r['Nodes expanded']} nodes"
@@ -217,7 +219,14 @@ def observations(rows, random_rows):
         f"(shortest is {bfs_r['Moves']}): fast but not optimal.",
         f"Plain A* matches BFS's {ap['Moves']} moves while expanding {ap['Nodes expanded']} nodes, "
         f"{100 * (1 - ap['Nodes expanded'] / bfs_r['Nodes expanded']):.0f}% fewer than BFS.",
-        f"Crop-safe A* has the lowest crop-safe cost of the offline planners ({asafe['Crop-safe cost']:.0f} vs "
+                f"BFS is optimal only when every move costs the same: under the crop-safe cost its route costs "
+        f"{bfs_r['Crop-safe cost']:.0f}, while UCS finds the cheapest ({ucs_r['Crop-safe cost']:.0f}). "
+        f"Crop-safe A* finds the same cost as UCS with {asafe['Nodes expanded']} nodes instead of "
+        f"{ucs_r['Nodes expanded']}, {100 * (1 - asafe['Nodes expanded'] / ucs_r['Nodes expanded']):.0f}% fewer: "
+        f"the heuristic still helps when moves have different costs.",
+        f"Crop-safe A* has the lowest crop-safe cost ({asafe['Crop-safe cost']:.0f}"
+        + (", tied with UCS" if asafe['Crop-safe cost'] == ucs_r['Crop-safe cost'] else "")
+        + f", vs "
         f"{ap['Crop-safe cost']:.0f} for plain A*) and passes {asafe['Cells next to crops']} cells next to "
         f"crops instead of {ap['Cells next to crops']}, at the same {asafe['Moves']} moves. "
         f"The price is more search: {asafe['Nodes expanded']} nodes instead of {ap['Nodes expanded']}.",
@@ -305,7 +314,7 @@ def draw_tables(rows, random_rows, save_path="screenshots/08_evaluation_table.pn
         widths = [0.22] + [(1 - 0.22) / (len(columns) - 1)] * (len(columns) - 1)
         table = ax.table(cellText=as_text_rows(data, columns), colLabels=[wrap_header(c) for c in columns],
                          cellLoc="center", bbox=[0, 0, 1, 0.92], colWidths=widths)
-        style_table(table, len(columns), highlight_rows=(5, 6))
+        style_table(table, len(columns), highlight_rows=(6, 7))
         ax.set_title(title, fontsize=11, fontweight="bold", loc="left")
     fig.suptitle("Task 6 - Performance evaluation", fontsize=14, fontweight="bold")
     fig.supxlabel(FOOTNOTE, fontsize=9, color=INK_MUTED, x=0.0, ha="left")   # reserved space under the tables
