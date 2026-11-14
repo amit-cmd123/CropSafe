@@ -1,0 +1,7 @@
+Algorithm,Reached goal,Moves,Crop-safe cost,Cells next to crops,Nodes expanded,Time (ms),Replans,Hits hidden obstacle
+BFS,True,25,62.0,6,215,0.391450000279292,0,True
+DFS,True,91,245.0,40,152,0.3441500002736575,0,False
+Greedy,True,27,60.0,3,28,0.08305000028485665,0,True
+A* (plain),True,25,62.0,6,31,0.10184999973716913,0,True
+A* (crop-safe),True,25,56.0,3,182,0.5419999997684499,0,True
+Online A* + replanning,True,25,60.0,5,203,0.6225000006452319,1,False
