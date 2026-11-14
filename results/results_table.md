@@ -4,12 +4,12 @@ All routes scored with the crop-safe cost. Time = median of 30 runs.
 
 | Algorithm | Reached goal | Moves | Crop-safe cost | Cells next to crops | Nodes expanded | Time (ms) | Replans | Hits hidden obstacle |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| BFS | yes | 25 | 62 | 6 | 215 | 0.391 | 0 | yes |
-| DFS | yes | 91 | 245 | 40 | 152 | 0.344 | 0 | no |
-| Greedy | yes | 27 | 60 | 3 | 28 | 0.083 | 0 | yes |
+| BFS | yes | 25 | 62 | 6 | 215 | 0.389 | 0 | yes |
+| DFS | yes | 91 | 245 | 40 | 152 | 0.347 | 0 | no |
+| Greedy | yes | 27 | 60 | 3 | 28 | 0.086 | 0 | yes |
 | A* (plain) | yes | 25 | 62 | 6 | 31 | 0.102 | 0 | yes |
-| A* (crop-safe) | yes | 25 | 56 | 3 | 182 | 0.542 | 0 | yes |
-| Online A* + replanning | yes | 25 | 60 | 5 | 203 | 0.623 | 1 | no |
+| A* (crop-safe) | yes | 25 | 56 | 3 | 182 | 0.545 | 0 | yes |
+| Online A* + replanning | yes | 25 | 60 | 5 | 203 | 0.633 | 1 | no |
 
 _Offline planners plan once on the known map: 'Reached goal' means their plan reaches the goal on that map.
 'Hits hidden obstacle' shows whether the real robot would drive into the unknown obstacle ('for real' = the plan reaches the goal without hitting it)._
@@ -20,12 +20,12 @@ Each layout adds 20 random known obstacles and 3 random hidden obstacles. Moves 
 
 | Algorithm | Reached goal on known map (%) | Reached goal for real (%) | Moves | Crop-safe cost | Nodes expanded | Time (ms) | Replans |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| BFS | 96.0 | 58.0 | 25.7 | 74.3 | 178.6 | 0.360 | 0 |
-| DFS | 96.0 | 20.0 | 86.1 | 257.1 | 135.1 | 0.331 | 0 |
-| Greedy | 96.0 | 55.0 | 28.0 | 74.7 | 31.8 | 0.099 | 0 |
-| A* (plain) | 96.0 | 54.0 | 25.7 | 73.2 | 48.2 | 0.158 | 0 |
-| A* (crop-safe) | 96.0 | 57.0 | 26.9 | 64.2 | 152.0 | 0.479 | 0 |
-| Online A* + replanning | 94.0 | 94.0 | 27.5 | 67.1 | 183.2 | 0.597 | 0.5 |
+| BFS | 96.0 | 58.0 | 25.7 | 74.3 | 178.6 | 0.333 | 0 |
+| DFS | 96.0 | 20.0 | 86.1 | 257.1 | 135.1 | 0.315 | 0 |
+| Greedy | 96.0 | 55.0 | 28.0 | 74.7 | 31.8 | 0.092 | 0 |
+| A* (plain) | 96.0 | 54.0 | 25.7 | 73.2 | 48.2 | 0.147 | 0 |
+| A* (crop-safe) | 96.0 | 57.0 | 26.9 | 64.2 | 152.0 | 0.451 | 0 |
+| Online A* + replanning | 94.0 | 94.0 | 27.5 | 67.1 | 183.2 | 0.548 | 0.5 |
 
 ## Observations
 

@@ -21,7 +21,7 @@ def overlay_penalty(ax, field, penalty):
     ax.imshow(shaded, cmap="Oranges", alpha=0.35, vmin=0, vmax=penalty.max() + 1, zorder=2)
 
 
-def main():
+def main(show=True):
     field = build_default_field()
     plain_problem = PathProblem(field, crop_safe=False)
     safe_problem = PathProblem(field, crop_safe=True)
@@ -75,6 +75,7 @@ def main():
     draw_formulation(safe_problem, title="Crop-safe problem formulation",
                      save_path="screenshots/06_crop_safe_formulation.png")
 
-    plt.show()      # opens both pages (two windows)
+    if show:
+        plt.show()      # opens both pages (two windows)
 if __name__ == "__main__":
     main()
