@@ -28,17 +28,18 @@ A simulated robot plans a route across a potato field from a start cell to a mon
 
 ## Group members
 
-**Group number:** XX
+**Group number:** 8
+**Group representative:** Amit Pramanik  
+**Contact:** bt24csa038@iiitn.ac.in
 
 | Name | Roll number | Contribution |
 |---|---|---|
-| _Name 1_ | _Roll no._ | _to be added_ |
-| _Name 2_ | _Roll no._ | _to be added_ |
-| _Name 3_ | _Roll no._ | _to be added_ |
-| _Name 4_ | _Roll no._ | _to be added_ |
-| _Name 5_ | _Roll no._ | _to be added_ |
-| _Name 6_ | _Roll no._ | _to be added_ |
-
+| _Amit Pramanik_ | _BT24CSA038_ | Set up the field start and goal; Task 4 crop-safe planning; Task 5 obstacle detection and replanning; Git work and repository coordination. |
+| _Prayag Bavadiya_ | _BT24CSA037_ | Task 1 field cells, crop rows, protected area, obstacles, and visualization in `field.py`. |
+| _Nikhil Makhija_ | _BT24CSA043_ | Task 6 performance evaluation and results. |
+| _Gaurav Chockai_ | _BT24CSA023_ | Task 3 BFS, DFS, and Greedy Best-First Search; shared search utilities. |
+| _Niraj Visave_ | _BT24CSA041_ | Task 3 A*, UCS, and Manhattan heuristic; compare optimality and search effort. |
+| _Affan Maniyar_ | _BT24CSA042_ | Task 2 problem formulation, legal moves, and path costs; integrate modules through `main.py`, update the README, and review final outputs. |
 ---
 
 ## How to run
