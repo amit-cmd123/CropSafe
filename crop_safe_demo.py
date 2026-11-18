@@ -16,7 +16,7 @@ Pages:
 import matplotlib.pyplot as plt
 import numpy as np
 
-from field import build_default_field, draw_field, SAFE
+from field import build_default_field, draw_field, SAFE, OBSTACLE
 from problem import PathProblem, DEFAULT_PENALTIES, formulation_report, draw_formulation
 from search.astar import astar
 
@@ -27,9 +27,17 @@ HEADER_GREEN = "#3f7d20"
 
 
 def overlay_penalty(ax, field, penalty):
-    """Shade driveable cells by their proximity penalty (orange = close to crops)."""
-    shaded = np.ma.masked_where((penalty == 0) | (field.grid != SAFE), penalty)
-    ax.imshow(shaded, cmap="Oranges", alpha=0.35, vmin=0, vmax=penalty.max() + 1, zorder=2)
+    """Tint cells near crops: red = right next to a crop (+3), yellow = two cells away (+1)."""
+    rgba = np.zeros(field.grid.shape + (4,))
+    top = penalty.max()
+    near = (penalty == top) & (top > 0)
+    mid = (penalty > 0) & ~near
+    rgba[near] = (0.86, 0.15, 0.15, 0.30)
+    rgba[mid] = (0.98, 0.80, 0.08, 0.28)
+    crops = ~np.isin(field.grid, (SAFE, OBSTACLE))        # never tint the crops themselves
+    rgba[crops] = 0
+    ax.imshow(rgba, extent=(-0.5, field.cols - 0.5, field.rows - 0.5, -0.5),
+              interpolation="nearest", zorder=1.8)
 
 
 def style_table(table, n_cols, highlight_row=None):
@@ -77,7 +85,7 @@ def compare_routes(field, title, save_path, show_hidden=True):
                          f"safe cost {safe_problem.path_cost(r.path):.0f}")
         overlay_penalty(ax, field, safe_problem.penalty)
     axes[0].get_legend().remove()          # one legend is enough
-    fig.suptitle(f"{title}\norange shading = proximity penalty (darker = closer to crops)",
+    fig.suptitle(f"{title}\nred tint = right next to crops (+3), yellow tint = two cells away (+1)",
                  fontsize=13, fontweight="bold")
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     return plain, safe

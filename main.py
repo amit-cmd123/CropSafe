@@ -39,7 +39,7 @@ from evaluation import (evaluate, evaluate_random, observations, print_table, sa
 from field import build_default_field, draw_field
 from problem import PathProblem, formulation_report, draw_formulation
 from replanning import (navigate, comparison_rows, print_report, draw_replanning_maps,
-                        draw_replanning_results, animate, mark_detected, DETECTED_HANDLE)
+                        draw_replanning_results, animate, save_gif, mark_detected, DETECTED_HANDLE)
 from search.astar import astar
 from search.bfs import bfs
 from search.dfs import dfs
@@ -133,9 +133,7 @@ def main():
     draw_all_paths(field, results, nav)
     if "--gif" in sys.argv:
         print("\nSaving screenshots/07_replanning.gif (about half a minute)...")
-        gif = animate(field, nav, substeps=4, pause_frames=10)
-        gif.save("screenshots/07_replanning.gif", writer="pillow", fps=12, dpi=70)
-        plt.close(gif._fig)
+        save_gif(field, nav)
 
     heading("TASK 6 - Performance evaluation")
     rows6 = evaluate(field)

@@ -430,8 +430,47 @@ def animate(field, nav, move_ms=300, substeps=8, pause_frames=20):
         return moving
 
     update(0)
-    return FuncAnimation(fig, update, frames=len(timeline), interval=move_ms / substeps,
+    anim = FuncAnimation(fig, update, frames=len(timeline), interval=move_ms / substeps,
                          blit=True, repeat=False)
+    anim.update_frame = update              # used by save_gif
+    anim.n_frames = len(timeline)
+    anim.moving = moving
+    return anim
+
+
+def save_gif(field, nav, path="screenshots/07_replanning.gif", fps=12, dpi=70):
+    """
+    Save the animation as a small GIF.
+
+    A GIF has only 256 colours. Matplotlib's own GIF writer picks a new palette
+    for every frame and dithers the soil texture differently each time, so every
+    pixel changes and the file gets huge. Here ONE palette is built from a few
+    sample frames and every frame uses it without dithering, so only the pixels
+    that really move change between frames - and the GIF compresses well.
+    """
+    import numpy as np
+    from PIL import Image
+
+    anim = animate(field, nav, substeps=4, pause_frames=10)
+    fig = anim._fig
+    fig.set_dpi(dpi)
+    fig.canvas.draw()                       # first draw: the animation marks its moving parts as "animated"
+    for artist in anim.moving:              # draw them normally again, so every captured frame shows them
+        artist.set_animated(False)
+    frames = []
+    for i in range(anim.n_frames):
+        anim.update_frame(i)
+        fig.canvas.draw()
+        frames.append(Image.fromarray(np.asarray(fig.canvas.buffer_rgba())[..., :3].copy()))
+    plt.close(fig)
+
+    samples = frames[::max(len(frames) // 8, 1)] + [frames[-1]]         # frames from the whole drive
+    strip = Image.new("RGB", (samples[0].width * len(samples), samples[0].height))
+    for k, img in enumerate(samples):
+        strip.paste(img, (k * img.width, 0))
+    palette = strip.quantize(colors=256, method=Image.Quantize.MEDIANCUT)
+    gif = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in frames]
+    gif[0].save(path, save_all=True, append_images=gif[1:], duration=int(1000 / fps), loop=0)
 
 
 if __name__ == "__main__":
@@ -447,9 +486,7 @@ if __name__ == "__main__":
 
     if make_gif:
         print("Saving screenshots/07_replanning.gif (takes about half a minute)...")
-        gif = animate(field, nav, substeps=4, pause_frames=10)        # fewer frames -> smaller file
-        gif.save("screenshots/07_replanning.gif", writer="pillow", fps=12, dpi=70)
-        plt.close(gif._fig)
+        save_gif(field, nav)
         print("Saved.")
     if want_animation:
         anim = animate(field, nav)             # keep this variable alive until plt.show()

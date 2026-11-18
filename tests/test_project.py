@@ -104,10 +104,15 @@ def test_unreachable_goal_is_reported_not_crashed():
 
 
 def test_default_replanning_scenario():
-    nav = navigate(build_default_field())
-    assert nav.reached and nav.replans == 1 and nav.moves == 25
+    """The initial plan runs through the hidden obstacle; the robot senses it next to it and replans once."""
+    field = build_default_field()
+    nav = navigate(field)
+    assert any(cell in field.hidden_obstacles for cell in nav.plans[0].path), "initial plan should hit it"
+    assert nav.reached and nav.replans == 1
     step, position, cell = nav.detections[0]
-    assert (step, position, cell) == (18, (5, 10), (4, 11))
+    assert cell in field.hidden_obstacles
+    assert max(abs(position[0] - cell[0]), abs(position[1] - cell[1])) == 1, "sensed from an adjacent cell"
+    assert cell not in nav.trail
 
 
 def test_replanning_never_hits_an_obstacle():

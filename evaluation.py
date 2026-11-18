@@ -228,8 +228,10 @@ def observations(rows, random_rows):
         + (", tied with UCS" if asafe['Crop-safe cost'] == ucs_r['Crop-safe cost'] else "")
         + f", vs "
         f"{ap['Crop-safe cost']:.0f} for plain A*) and passes {asafe['Cells next to crops']} cells next to "
-        f"crops instead of {ap['Cells next to crops']}, at the same {asafe['Moves']} moves. "
-        f"The price is more search: {asafe['Nodes expanded']} nodes instead of {ap['Nodes expanded']}.",
+        f"crops instead of {ap['Cells next to crops']}, "
+        + (f"at the same {asafe['Moves']} moves. " if asafe['Moves'] == ap['Moves'] else
+           f"for {asafe['Moves'] - ap['Moves']} extra moves ({asafe['Moves']} instead of {ap['Moves']}). ")
+        + f"The price is also more search: {asafe['Nodes expanded']} nodes instead of {ap['Nodes expanded']}.",
         f"{', '.join(hit)} plan a route through the hidden obstacle, because they only know the known map"
         + (f" ({' and '.join(missed)} {'misses' if len(missed) == 1 else 'miss'} it by chance)." if missed else ".")
         + f" Online A* senses it, replans {online['Replans']} time(s) and reaches the goal in {online['Moves']} moves.",

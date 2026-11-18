@@ -1,8 +1,8 @@
 Algorithm,Reached goal,Moves,Crop-safe cost,Cells next to crops,Nodes expanded,Time (ms),Replans,Hits hidden obstacle
-BFS,True,25,62.0,6,215,0.3908500002580695,0,True
-DFS,True,91,245.0,40,152,0.3614999986893963,0,False
-UCS,True,25,56.0,3,213,0.628649999271147,0,True
-Greedy,True,27,60.0,3,28,0.08534999869880266,0,True
-A* (plain),True,25,62.0,6,31,0.10914999984379392,0,True
-A* (crop-safe),True,25,56.0,3,182,0.5843499984621303,0,True
-Online A* + replanning,True,25,60.0,5,203,0.6936500012670876,1,False
+BFS,True,25,62.0,6,209,0.856950000525103,0,True
+DFS,True,87,225.0,35,147,0.6094000000302913,0,False
+UCS,True,27,60.0,3,206,1.0683500022423686,0,True
+Greedy,True,27,60.0,3,28,0.14725000073667616,0,True
+A* (plain),True,25,62.0,6,31,0.18404999900667462,0,True
+A* (crop-safe),True,27,60.0,3,175,0.981400002274313,0,True
+Online A* + replanning,True,29,70.0,6,201,1.164350001999992,1,False
